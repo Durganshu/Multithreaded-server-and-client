@@ -67,6 +67,7 @@ void insert_node (node **head, node *prev, node *new_node){
 
 void remove_node (node **head, node *n){
     if(n==*head){
+        
     }
     else{
         (n->prev)->next = n->next;
