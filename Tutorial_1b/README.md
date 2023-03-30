@@ -1,6 +1,6 @@
 # Distributed Systems with Networking (Tutorial 1b)
 
-(The instructions for running the code are for Linux (particularly for Ubuntu 20.04 LTS))
+(The instructions for running the code are for Linux (particularly for Ubuntu 20.04 LTS)
 
 The directory consists of two sub directories: `Practice` and `ex02-pointer-server`. 
 
