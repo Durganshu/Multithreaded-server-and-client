@@ -14,7 +14,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include<ctype.h>
 #include"url.h"
 
 /**
@@ -31,7 +30,7 @@ int parse_url(char* url, url_info *info)
 	// url format: [http://]<hostname>[:<port>]/<path>
 	// e.g. https://www.polytechnique.edu:80/index.php
 
-	char *column_slash_slash, *host_name_path, *protocol, *path, *host_name;
+	char *column_slash_slash, *host_name_path, *protocol;
 
 	column_slash_slash = strstr(url, "://");
 	// it searches :// in the string. if exists,
@@ -50,15 +49,18 @@ int parse_url(char* url, url_info *info)
 	 * To be completed:
 	 * 	 store info->protocol
 	 */
+
 	info->protocol = protocol;
 
 	/*
      * To be completed:
 	 * 	 Return an error (PARSE_URL_PROTOCOL_UNKNOWN) if the protocol is not 'http' using strcmp.
 	 */
-	if(strcmp(protocol, "http")){
+
+	if (strcmp(info->protocol, "http")) {
 		return PARSE_URL_PROTOCOL_UNKNOWN;
 	}
+
 	/*
 	 * To be completed:
 	 * 	 Look for the first '/' in host_name_path using strchr
@@ -69,15 +71,13 @@ int parse_url(char* url, url_info *info)
 	 * 	       It simplifies this function, but I'll let you understand how. :-)
 	 */
 
-	path = strchr(host_name_path, '/');
-	if (path != NULL){
-		info->path = path + 1;
-		*path = '\0';
-		host_name = host_name_path;
-	} else {
+	char *slash = strchr(host_name_path, '/');
+	if (slash == NULL) {
 		return PARSE_URL_NO_SLASH;
 	}
-	
+	*slash = '\0';
+	info->host = host_name_path;
+	info->path = slash + 1;
 
 	/*
 	 * To be completed:
@@ -86,19 +86,16 @@ int parse_url(char* url, url_info *info)
 	 * 	 If ':' is found, split the string and use sscanf to parse the port.
 	 * 	 Return an error if the port is not a number, and store it otherwise.
 	 */
-	char *temp_port = strchr(host_name, ':');
-	if (temp_port != NULL){
-		if(!isdigit(*(temp_port + 1))){
+
+	char *port = strchr(host_name_path, ':');
+	if (port) {
+		*port = '\0';
+		port = port + 1;
+		if (sscanf(port, "%d", &info->port) != 1) {
 			return PARSE_URL_INVALID_PORT;
-		} else{
-			sscanf( temp_port, ":%d", &info->port);
-			info->path = path + 1;
-			*temp_port = '\0';
-			info->host = host_name;
 		}
-	} else if (temp_port == NULL){
+	} else {
 		info->port = 80;
-		info->host = host_name;
 	}
 
 	// If everything went well, return 0.
