@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,6 +24,17 @@
 
 #include "url.h"
 #include "wgetX.h"
+
+// struct addrinfo {
+//     int              ai_flags;
+//     int              ai_family;
+//     int              ai_socktype;
+//     int              ai_protocol;
+//     socklen_t        ai_addrlen;
+//     struct sockaddr *ai_addr;
+//     char            *ai_canonname;
+//     struct addrinfo *ai_next;
+// };
 
 int main(int argc, char* argv[]) {
     url_info info;
@@ -47,7 +59,7 @@ int main(int argc, char* argv[]) {
     }
 
     //If needed for debug
-    //print_url_info(&info);
+    print_url_info(&info);
 
     // Download the page
     struct http_reply reply;
@@ -88,8 +100,11 @@ int download_page(url_info *info, http_reply *reply) {
      *     Use getaddrinfo and implement a function that works for both IPv4 and IPv6.
      *
      */
-
-
+    //Source: https://linuxhint.com/c-getaddrinfo-function-usage/
+    struct hostent *server;
+    /* lookup the ip address */
+    server = gethostbyname(info->host);
+    if (server == NULL) error("ERROR, no such host");
 
     /*
      * To be completed:
@@ -106,8 +121,41 @@ int download_page(url_info *info, http_reply *reply) {
      *   Note4: Free the request buffer returned by http_get_request by calling the 'free' function.
      *
      */
+    //https://stackoverflow.com/questions/22077802/simple-c-example-of-doing-an-http-post-and-consuming-the-response
+    char* http_data = http_get_request(info);
+    
+    struct sockaddr_in serv_addr;
+    int sockfd, bytes, sent, received, total;
+    //char message[1024],response[4096];
 
+    /* create the socket */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) error("ERROR opening socket");
 
+    /* fill in the structure */
+    memset(&serv_addr,0,sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(info->port);
+    memcpy(&serv_addr.sin_addr.s_addr,server->h_addr_list[0],server->h_length);
+    
+    /* connect the socket */
+    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
+        error("ERROR connecting");
+    
+    /* send the request */
+    total = strlen(http_data);
+    sent = 0;
+    do {
+        bytes = write(sockfd,http_data+sent,total-sent);
+        if (bytes < 0)
+            error("ERROR writing message to socket");
+        if (bytes == 0)
+            break;
+        sent+=bytes;
+    } while (sent < total);
+
+    /* free http_data */
+    free (http_data);
 
     /*
      * To be completed:
@@ -130,6 +178,20 @@ int download_page(url_info *info, http_reply *reply) {
      *
      *
      */
+    reply->reply_buffer = (char*) malloc(4096 * sizeof(char));
+    /* receive the response */
+    memset(&reply->reply_buffer,0,sizeof(reply->reply_buffer));
+    total = sizeof(reply->reply_buffer)-1;
+    received = 0;
+    do {
+        bytes = read(sockfd,reply->reply_buffer+received,total-received);
+        reply->reply_buffer_length = bytes;
+        if (bytes < 0)
+            error("ERROR reading response from socket");
+        if (bytes == 0)
+            break;
+        received+=bytes;
+    } while (received < total);
 
 
 
@@ -141,9 +203,16 @@ void write_data(const char *path, const char * data, int len) {
      * To be completed:
      *   Use fopen, fwrite and fclose functions.
      */
+    FILE * fp;
+    fp = fopen (path, "w+");
+    fwrite(data , 1 , len , fp );
+    fclose(fp);
+
 }
 
 char* http_get_request(url_info *info) {
+    printf("Path in http_request:\t\t/%s\n", info->path);
+    printf("Host name:\t%s\n", info->host);
     char * request_buffer = (char *) malloc(100 + strlen(info->path) + strlen(info->host));
     snprintf(request_buffer, 1024, "GET /%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
 	    info->path, info->host);
