@@ -55,4 +55,6 @@ char* http_get_request(url_info *info);
  */
 char *read_http_reply(struct http_reply *reply);
 
+char *read_http_reply2(struct http_reply *reply, char * str);
+
 #endif /* WGETX_H_ */

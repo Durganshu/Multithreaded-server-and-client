@@ -24,7 +24,7 @@
 
 #include "url.h"
 #include "wgetX.h"
-
+#define MAXRCVLEN 4096
 // struct addrinfo {
 //     int              ai_flags;
 //     int              ai_family;
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     }
 
     //If needed for debug
-    print_url_info(&info);
+    //print_url_info(&info);
 
     // Download the page
     struct http_reply reply;
@@ -104,7 +104,8 @@ int download_page(url_info *info, http_reply *reply) {
     struct hostent *server;
     /* lookup the ip address */
     server = gethostbyname(info->host);
-    if (server == NULL) error("ERROR, no such host");
+    if (server == NULL) perror("ERROR, no such host");
+    printf("Client is alive and establishing socket connection.\n");
 
     /*
      * To be completed:
@@ -125,12 +126,12 @@ int download_page(url_info *info, http_reply *reply) {
     char* http_data = http_get_request(info);
     
     struct sockaddr_in serv_addr;
-    int sockfd, bytes, sent, received, total;
+    int sockfd, connfd, bytes, sent, received, total;
     //char message[1024],response[4096];
 
     /* create the socket */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) error("ERROR opening socket");
+    if (sockfd < 0) perror("ERROR opening socket");
 
     /* fill in the structure */
     memset(&serv_addr,0,sizeof(serv_addr));
@@ -140,19 +141,40 @@ int download_page(url_info *info, http_reply *reply) {
     
     /* connect the socket */
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-        error("ERROR connecting");
+        perror("ERROR connecting");
     
+    /**********************************************/
+    // if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) { // bind the socket to the requested address and port.
+	// fprintf(stderr, "Could not bind socket: %s\n", strerror(errno));
+	// return -1;
+    // }
+
+    // if(listen(sockfd, 10) == -1) {                // Listen to the given file descriptor ; the 2nd parameter is the
+	// // length of the backlog of "pending connections"
+	// fprintf(stderr, "Could not listen: %s\n", strerror(errno));
+	// return -1;
+    // }
+
+    /**********************************************/
     /* send the request */
     total = strlen(http_data);
     sent = 0;
     do {
         bytes = write(sockfd,http_data+sent,total-sent);
         if (bytes < 0)
-            error("ERROR writing message to socket");
+            perror("ERROR writing message to socket");
         if (bytes == 0)
             break;
         sent+=bytes;
     } while (sent < total);
+
+    // while(1) {
+	// connfd = accept(sockfd, (struct sockaddr*)NULL ,NULL); // accept awaiting request
+	// //strcpy(sendBuff, "Computer says....no!\r\n");
+	// write(connfd, http_data+sent,total-sent); // write does what you'd expect:
+	// 					   // it writes arg3 octets from arg2 into arg1 file descriptor
+	// close(connfd);                             // ALWAYS remember to close a connection when done.
+    // }
 
     /* free http_data */
     free (http_data);
@@ -178,20 +200,25 @@ int download_page(url_info *info, http_reply *reply) {
      *
      *
      */
+    /* connect the socket */
+    // if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
+    //     perror("ERROR connecting");
+    
+
     reply->reply_buffer = (char*) malloc(4096 * sizeof(char));
+    char str[MAXRCVLEN + 1];
     /* receive the response */
-    memset(&reply->reply_buffer,0,sizeof(reply->reply_buffer));
-    total = sizeof(reply->reply_buffer)-1;
-    received = 0;
-    do {
-        bytes = read(sockfd,reply->reply_buffer+received,total-received);
-        reply->reply_buffer_length = bytes;
-        if (bytes < 0)
-            error("ERROR reading response from socket");
-        if (bytes == 0)
-            break;
-        received+=bytes;
-    } while (received < total);
+    //memset(&reply->reply_buffer,0,sizeof(reply->reply_buffer));
+    // total = sizeof(reply->reply_buffer)-1;
+    // received = 0;
+    //reply->reply_buffer_length = recv(sockfd, reply->reply_buffer, sizeof(reply->reply_buffer), 0);
+    reply->reply_buffer_length = recv(sockfd, str, MAXRCVLEN - 1, 0);
+    if (reply->reply_buffer_length < 0) {
+	fprintf(stderr, "recv returned error: %s\n", strerror(errno));
+	return -1;
+    }
+
+    reply->reply_buffer = str;
 
 
 
@@ -211,8 +238,6 @@ void write_data(const char *path, const char * data, int len) {
 }
 
 char* http_get_request(url_info *info) {
-    printf("Path in http_request:\t\t/%s\n", info->path);
-    printf("Host name:\t%s\n", info->host);
     char * request_buffer = (char *) malloc(100 + strlen(info->path) + strlen(info->host));
     snprintf(request_buffer, 1024, "GET /%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
 	    info->path, info->host);
@@ -235,7 +260,7 @@ char *next_line(char *buff, int len) {
 }
 
 char *read_http_reply(struct http_reply *reply) {
-
+    printf("Length of reply: %d\n", reply->reply_buffer_length);
     // Let's first isolate the first line of the reply
     char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
     if (status_line == NULL) {
@@ -282,3 +307,4 @@ char *read_http_reply(struct http_reply *reply) {
 
     return buf;
 }
+
