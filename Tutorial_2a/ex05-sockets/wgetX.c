@@ -79,10 +79,11 @@ int main(int argc, char* argv[]) {
     write_data(file_name, response, reply.reply_buffer + reply.reply_buffer_length - response);
 
     // Free allocated memory
+    reply.reply_buffer = NULL;
     free(reply.reply_buffer);
 
     // Just tell the user where is the file
-    fprintf(stderr, "the file is saved in %s.", file_name);
+    fprintf(stderr, "the file is saved in %s.\n", file_name);
     return 0;
 }
 
@@ -102,12 +103,12 @@ int download_page(url_info *info, http_reply *reply) {
     //Source: https://linuxhint.com/c-getaddrinfo-function-usage/
     
     struct addrinfo hints, *res;
-    //getaddrinfo(info->host,info->port, &hints, &res);
-    //getaddrinfo(info->host,"80", &hints, &res);
     memset(&hints, 0,sizeof hints);
     hints.ai_family=AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    getaddrinfo("example.com","80", &hints, &res);
+    char port[5];
+    sprintf(port, "%d", info->port);
+    getaddrinfo(info->host, port, &hints, &res);
     /*
      * To be completed:
      *   Next, you will need to send the HTTP request.
@@ -131,14 +132,12 @@ int download_page(url_info *info, http_reply *reply) {
     char buf[2056];
     int byte_count;
 
-    printf("ai_family: %d, ai_socktype: %d and ai_protocol: %d\n", res->ai_family, res->ai_socktype, res->ai_protocol);
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     printf("Connecting...\n");
     connect(sockfd,res->ai_addr,res->ai_addrlen);
     printf("Connected!\n");
-    char *header = "GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
-    //send(sockfd,http_data,strlen(http_data),0);
-    send(sockfd,header,strlen(header),0);
+
+    send(sockfd,http_data,strlen(http_data),0);
     printf("GET Sent...\n");
     
     /* free http_data */
@@ -194,6 +193,7 @@ void write_data(const char *path, const char * data, int len) {
 }
 
 char* http_get_request(url_info *info) {
+
     char * request_buffer = (char *) malloc(100 + strlen(info->path) + strlen(info->host));
     snprintf(request_buffer, 1024, "GET /%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
 	    info->path, info->host);
@@ -216,7 +216,7 @@ char *next_line(char *buff, int len) {
 }
 
 char *read_http_reply(struct http_reply *reply) {
-    //printf("Length of reply: %d\n", reply->reply_buffer_length);
+
     // Let's first isolate the first line of the reply
     char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
     if (status_line == NULL) {
@@ -229,7 +229,7 @@ char *read_http_reply(struct http_reply *reply) {
     int status;
     double http_version;
     int rv = sscanf(reply->reply_buffer, "HTTP/%lf %d", &http_version, &status);
-    //printf("http_version: %lf, http_status: %d", &http_version, status);
+
     if (rv != 2) {
 	    fprintf(stderr, "Could not parse http response first line (rv=%d, %s)\n", rv, reply->reply_buffer);
 	    return NULL;
@@ -258,11 +258,7 @@ char *read_http_reply(struct http_reply *reply) {
      *     If you feel like having a real challenge, go on and implement HTTP redirect support for your client.
      *
      */
-    // while (status_line == NULL){
-
-    //     status_line = next_line(buf, sizeof(buf));
-
-    // }
+    
 
 
 
