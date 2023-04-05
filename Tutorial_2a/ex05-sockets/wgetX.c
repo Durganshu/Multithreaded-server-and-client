@@ -129,7 +129,7 @@ int download_page(url_info *info, http_reply *reply) {
     char* http_data = http_get_request(info);
     int sockfd;
     
-    char buf[2056];
+    char buf[MAXRCVLEN];
     int byte_count;
 
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
