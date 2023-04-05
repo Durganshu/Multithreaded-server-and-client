@@ -68,7 +68,6 @@ int main(int argc, char* argv[]) {
     if (ret) {
 	return 3;
     }
-
     // Now parse the responses
     char *response = read_http_reply(&reply);
     if (response == NULL) {
@@ -101,12 +100,14 @@ int download_page(url_info *info, http_reply *reply) {
      *
      */
     //Source: https://linuxhint.com/c-getaddrinfo-function-usage/
-    struct hostent *server;
-    /* lookup the ip address */
-    server = gethostbyname(info->host);
-    if (server == NULL) perror("ERROR, no such host");
-    printf("Client is alive and establishing socket connection.\n");
-
+    
+    struct addrinfo hints, *res;
+    //getaddrinfo(info->host,info->port, &hints, &res);
+    //getaddrinfo(info->host,"80", &hints, &res);
+    memset(&hints, 0,sizeof hints);
+    hints.ai_family=AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    getaddrinfo("example.com","80", &hints, &res);
     /*
      * To be completed:
      *   Next, you will need to send the HTTP request.
@@ -122,60 +123,24 @@ int download_page(url_info *info, http_reply *reply) {
      *   Note4: Free the request buffer returned by http_get_request by calling the 'free' function.
      *
      */
-    //https://stackoverflow.com/questions/22077802/simple-c-example-of-doing-an-http-post-and-consuming-the-response
+    
+
     char* http_data = http_get_request(info);
+    int sockfd;
     
-    struct sockaddr_in serv_addr;
-    int sockfd, connfd, bytes, sent, received, total;
-    //char message[1024],response[4096];
+    char buf[2056];
+    int byte_count;
 
-    /* create the socket */
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) perror("ERROR opening socket");
-
-    /* fill in the structure */
-    memset(&serv_addr,0,sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(info->port);
-    memcpy(&serv_addr.sin_addr.s_addr,server->h_addr_list[0],server->h_length);
+    printf("ai_family: %d, ai_socktype: %d and ai_protocol: %d\n", res->ai_family, res->ai_socktype, res->ai_protocol);
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    printf("Connecting...\n");
+    connect(sockfd,res->ai_addr,res->ai_addrlen);
+    printf("Connected!\n");
+    char *header = "GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+    //send(sockfd,http_data,strlen(http_data),0);
+    send(sockfd,header,strlen(header),0);
+    printf("GET Sent...\n");
     
-    /* connect the socket */
-    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-        perror("ERROR connecting");
-    
-    /**********************************************/
-    // if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) { // bind the socket to the requested address and port.
-	// fprintf(stderr, "Could not bind socket: %s\n", strerror(errno));
-	// return -1;
-    // }
-
-    // if(listen(sockfd, 10) == -1) {                // Listen to the given file descriptor ; the 2nd parameter is the
-	// // length of the backlog of "pending connections"
-	// fprintf(stderr, "Could not listen: %s\n", strerror(errno));
-	// return -1;
-    // }
-
-    /**********************************************/
-    /* send the request */
-    total = strlen(http_data);
-    sent = 0;
-    do {
-        bytes = write(sockfd,http_data+sent,total-sent);
-        if (bytes < 0)
-            perror("ERROR writing message to socket");
-        if (bytes == 0)
-            break;
-        sent+=bytes;
-    } while (sent < total);
-
-    // while(1) {
-	// connfd = accept(sockfd, (struct sockaddr*)NULL ,NULL); // accept awaiting request
-	// //strcpy(sendBuff, "Computer says....no!\r\n");
-	// write(connfd, http_data+sent,total-sent); // write does what you'd expect:
-	// 					   // it writes arg3 octets from arg2 into arg1 file descriptor
-	// close(connfd);                             // ALWAYS remember to close a connection when done.
-    // }
-
     /* free http_data */
     free (http_data);
 
@@ -200,28 +165,19 @@ int download_page(url_info *info, http_reply *reply) {
      *
      *
      */
-    /* connect the socket */
-    // if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-    //     perror("ERROR connecting");
-    
-
+   
     reply->reply_buffer = (char*) malloc(4096 * sizeof(char));
-    char str[MAXRCVLEN + 1];
-    /* receive the response */
-    //memset(&reply->reply_buffer,0,sizeof(reply->reply_buffer));
-    // total = sizeof(reply->reply_buffer)-1;
-    // received = 0;
-    //reply->reply_buffer_length = recv(sockfd, reply->reply_buffer, sizeof(reply->reply_buffer), 0);
-    reply->reply_buffer_length = recv(sockfd, str, MAXRCVLEN - 1, 0);
-    if (reply->reply_buffer_length < 0) {
-	fprintf(stderr, "recv returned error: %s\n", strerror(errno));
-	return -1;
-    }
-
-    reply->reply_buffer = str;
-
-
-
+    //all right ! now that we're connected, we can receive some data!
+    reply->reply_buffer_length = recv(sockfd,buf,sizeof(buf)-1,0); // <-- -1 to leave room for a null terminator
+    buf[reply->reply_buffer_length] = 0; // <-- add the null terminator
+    printf("recv()'d %d bytes of data in buf\n",byte_count);
+    // printf("------------------------------------\n");
+    // printf("%s",buf);
+    // printf("------------------------------------\n");
+    reply->reply_buffer = buf;
+    // printf("------------------------------------\n");
+    // printf("%s",reply->reply_buffer);
+    // printf("------------------------------------\n");
     return 0;
 }
 
@@ -260,7 +216,7 @@ char *next_line(char *buff, int len) {
 }
 
 char *read_http_reply(struct http_reply *reply) {
-    printf("Length of reply: %d\n", reply->reply_buffer_length);
+    //printf("Length of reply: %d\n", reply->reply_buffer_length);
     // Let's first isolate the first line of the reply
     char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
     if (status_line == NULL) {
@@ -273,16 +229,17 @@ char *read_http_reply(struct http_reply *reply) {
     int status;
     double http_version;
     int rv = sscanf(reply->reply_buffer, "HTTP/%lf %d", &http_version, &status);
+    //printf("http_version: %lf, http_status: %d", &http_version, status);
     if (rv != 2) {
-	fprintf(stderr, "Could not parse http response first line (rv=%d, %s)\n", rv, reply->reply_buffer);
-	return NULL;
+	    fprintf(stderr, "Could not parse http response first line (rv=%d, %s)\n", rv, reply->reply_buffer);
+	    return NULL;
     }
-
+    
     if (status != 200) {
-	fprintf(stderr, "Server returned status %d (should be 200)\n", status);
-	return NULL;
+        
+	    fprintf(stderr, "Server returned status %d (should be 200)\n", status);
+	    return NULL;
     }
-
     char *buf = status_line + 2;
 
     /*
@@ -301,7 +258,11 @@ char *read_http_reply(struct http_reply *reply) {
      *     If you feel like having a real challenge, go on and implement HTTP redirect support for your client.
      *
      */
+    // while (status_line == NULL){
 
+    //     status_line = next_line(buf, sizeof(buf));
+
+    // }
 
 
 
