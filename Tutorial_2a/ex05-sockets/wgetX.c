@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "Could not parse http reply\n");
 	return 4;
     }
-
+    //printf("%s", response);
     // Write response to a file
     write_data(file_name, response, reply.reply_buffer + reply.reply_buffer_length - response);
 
@@ -133,12 +133,12 @@ int download_page(url_info *info, http_reply *reply) {
     int byte_count;
 
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    printf("Connecting...\n");
+    printf("Connecting to the server...\n");
     connect(sockfd,res->ai_addr,res->ai_addrlen);
-    printf("Connected!\n");
+    printf("Connection successful!\n");
 
     send(sockfd,http_data,strlen(http_data),0);
-    printf("GET Sent...\n");
+    printf("HTTP Request sent...\n");
     
     /* free http_data */
     free (http_data);
@@ -170,13 +170,9 @@ int download_page(url_info *info, http_reply *reply) {
     reply->reply_buffer_length = recv(sockfd,buf,sizeof(buf)-1,0); // <-- -1 to leave room for a null terminator
     buf[reply->reply_buffer_length] = 0; // <-- add the null terminator
     printf("recv()'d %d bytes of data in buf\n",byte_count);
-    // printf("------------------------------------\n");
-    // printf("%s",buf);
-    // printf("------------------------------------\n");
+
     reply->reply_buffer = buf;
-    // printf("------------------------------------\n");
-    // printf("%s",reply->reply_buffer);
-    // printf("------------------------------------\n");
+
     return 0;
 }
 
@@ -216,15 +212,17 @@ char *next_line(char *buff, int len) {
 }
 
 char *read_http_reply(struct http_reply *reply) {
-
+    
     // Let's first isolate the first line of the reply
     char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
+    
+    //printf("%s", status_line);
     if (status_line == NULL) {
 	fprintf(stderr, "Could not find status\n");
 	return NULL;
     }
     *status_line = '\0'; // Make the first line is a null-terminated string
-
+    
     // Now let's read the status (parsing the first line)
     int status;
     double http_version;
@@ -258,9 +256,19 @@ char *read_http_reply(struct http_reply *reply) {
      *     If you feel like having a real challenge, go on and implement HTTP redirect support for your client.
      *
      */
+
+    // int content_length;
+    // char *date, *content_type, *last_modified;
+    //char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
     
-
-
+    // https://stackoverflow.com/questions/71786091/beginning-of-the-string-snprintf-doesnt-show
+    char *ptr = reply->reply_buffer;
+    while(1){
+        status_line = next_line(ptr, reply->reply_buffer_length);
+        buf = status_line +2;
+        if (ptr+ 2 == buf) break;
+        ptr = buf;
+    }
 
     return buf;
 }
