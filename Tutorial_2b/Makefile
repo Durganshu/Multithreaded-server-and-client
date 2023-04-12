@@ -8,19 +8,29 @@
 
 # Here is a simple Make Macro.
 
-LINK_TARGET = client
+LINK_TARGET1 = client
+
+LINK_TARGET2 = server
+
+LINK_TARGET3 = fancyclient
 
 # Here is a Make Macro that uses the backslash to extend to multiple lines.
 # This allows quick modification of more object files.
 
-OBJS = \
+OBJS1 = \
 	client.o 
+
+OBJS2 = \
+	server.o 
+
+OBJS3 = \
+	fancyclient.o 
 	
 # Here is a Make Macro defined by two Macro Expansions.
 # A Macro Expansion may be treated as a textual replacement of the Make Macro.
 # Macro Expansions are introduced with $ and enclosed in (parentheses).
 
-REBUILDABLES = $(OBJS) $(LINK_TARGET)
+REBUILDABLES = $(OBJS1) $(LINK_TARGET1) $(OBJS2) $(LINK_TARGET2) $(OBJS3) $(LINK_TARGET3)
 
 # There are two standard Targets your Makefile should probably have:
 # "all" and "clean", because they are often command-line Goals.
@@ -30,7 +40,7 @@ REBUILDABLES = $(OBJS) $(LINK_TARGET)
 # The rule for "all" is used to incrementally build your system.
 # It does this by expressing a dependency on the results of that system,
 # which in turn have their own rules and dependencies.
-all : $(LINK_TARGET)
+all : $(LINK_TARGET1) $(LINK_TARGET2) $(LINK_TARGET3)
 
 # Make Macros do not need to be defined before their Macro Expansions,
 # but they normally should be defined before they appear in any Rules.
@@ -53,7 +63,13 @@ clean:
 # $@ expands to the rule's target, in this case "wgetX".
 # $^ expands to the rule's dependencies, in this case the two files
 # url.o and wgetX.o
-$(LINK_TARGET) : $(OBJS)
+$(LINK_TARGET1) : $(OBJS1)
+	cc -g -o $@ $^ 
+
+$(LINK_TARGET2) : $(OBJS2)
+	cc -g -o $@ $^ 
+
+$(LINK_TARGET3) : $(OBJS3)
 	cc -g -o $@ $^ 
 
 # Here is a Pattern Rule, often used for compile-line.
@@ -73,5 +89,6 @@ $(LINK_TARGET) : $(OBJS)
 # Dependency Rules are often used to capture header file dependencies.
 
 client.o : client.h 
-
+server.o : server.h
+fancyclient.o : fancyclient.h
  
