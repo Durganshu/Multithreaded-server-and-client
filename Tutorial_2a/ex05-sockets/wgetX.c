@@ -24,17 +24,7 @@
 
 #include "url.h"
 #include "wgetX.h"
-#define MAXRCVLEN 4096
-// struct addrinfo {
-//     int              ai_flags;
-//     int              ai_family;
-//     int              ai_socktype;
-//     int              ai_protocol;
-//     socklen_t        ai_addrlen;
-//     struct sockaddr *ai_addr;
-//     char            *ai_canonname;
-//     struct addrinfo *ai_next;
-// };
+#define SIZE_OF_BUFFER 4096
 
 int main(int argc, char* argv[]) {
     url_info info;
@@ -128,14 +118,11 @@ int download_page(url_info *info, http_reply *reply) {
 
     char* http_data = http_get_request(info);
     int sockfd;
-    
-    char buf[MAXRCVLEN];
-    int byte_count;
+
 
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    printf("Connecting to the server...\n");
     connect(sockfd,res->ai_addr,res->ai_addrlen);
-    printf("Connection successful!\n");
+    printf("Successful connected to the server.\n");
 
     send(sockfd,http_data,strlen(http_data),0);
     printf("HTTP Request sent...\n");
@@ -164,14 +151,15 @@ int download_page(url_info *info, http_reply *reply) {
      *
      *
      */
-   
-    reply->reply_buffer = (char*) malloc(4096 * sizeof(char));
-    //all right ! now that we're connected, we can receive some data!
-    reply->reply_buffer_length = recv(sockfd,buf,sizeof(buf)-1,0); // <-- -1 to leave room for a null terminator
-    buf[reply->reply_buffer_length] = 0; // <-- add the null terminator
-    printf("recv()'d %d bytes of data in buf\n",byte_count);
 
-    reply->reply_buffer = buf;
+    char *buffer;
+    buffer = (char*) malloc(SIZE_OF_BUFFER * sizeof(char));
+    reply->reply_buffer_length = recv(sockfd, buffer,strlen(buffer)-1,0);
+    buffer[reply->reply_buffer_length] = 0;
+
+    printf("Received %d bytes of data\n", reply->reply_buffer_length);
+
+    reply->reply_buffer = buffer;
 
     return 0;
 }
@@ -216,7 +204,7 @@ char *read_http_reply(struct http_reply *reply) {
     // Let's first isolate the first line of the reply
     char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
     
-    //printf("%s", status_line);
+    //printf("status line:\n%s", status_line);
     if (status_line == NULL) {
 	fprintf(stderr, "Could not find status\n");
 	return NULL;
@@ -256,18 +244,16 @@ char *read_http_reply(struct http_reply *reply) {
      *     If you feel like having a real challenge, go on and implement HTTP redirect support for your client.
      *
      */
-
-    // int content_length;
-    // char *date, *content_type, *last_modified;
-    //char *status_line = next_line(reply->reply_buffer, reply->reply_buffer_length);
+    // Reference: https://stackoverflow.com/questions/71786091/beginning-of-the-string-snprintf-doesnt-show
     
-    // https://stackoverflow.com/questions/71786091/beginning-of-the-string-snprintf-doesnt-show
-    char *ptr = reply->reply_buffer;
+    char *temp_buffer = reply->reply_buffer;
     while(1){
-        status_line = next_line(ptr, reply->reply_buffer_length);
+        status_line = next_line(temp_buffer, reply->reply_buffer_length);
         buf = status_line +2;
-        if (ptr+ 2 == buf) break;
-        ptr = buf;
+        if (temp_buffer+ 2 == buf){
+            break;
+        }
+        temp_buffer = buf;
     }
 
     return buf;
