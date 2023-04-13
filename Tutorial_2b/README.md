@@ -28,7 +28,8 @@ Run the executable:
 
 `./fancyclient IP_ADDRESS PORT_NUMBER`
 
-`nc` can be used to listen a local port in order to validate the clients.
+`nc` can be used to listen a local port in order to validate the clients:
 
+`nc -l -u PORT_NUMBER`
 
 In order to delete the generated files and clean the project directory, run: `make clean`.
