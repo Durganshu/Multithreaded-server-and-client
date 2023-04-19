@@ -8,19 +8,25 @@
 
 # Here is a simple Make Macro.
 
-LINK_TARGET = mutex
+LINK_TARGET1 = client
+
+LINK_TARGET2 = server
+
 
 # Here is a Make Macro that uses the backslash to extend to multiple lines.
 # This allows quick modification of more object files.
 
-OBJS = \
-	mutex.o
+OBJS1 = \
+	client.o 
+
+OBJS2 = \
+	server.o 
 	
 # Here is a Make Macro defined by two Macro Expansions.
 # A Macro Expansion may be treated as a textual replacement of the Make Macro.
 # Macro Expansions are introduced with $ and enclosed in (parentheses).
 
-REBUILDABLES = $(OBJS) $(LINK_TARGET)
+REBUILDABLES = $(OBJS1) $(LINK_TARGET1) $(OBJS2) $(LINK_TARGET2)
 
 # There are two standard Targets your Makefile should probably have:
 # "all" and "clean", because they are often command-line Goals.
@@ -30,7 +36,7 @@ REBUILDABLES = $(OBJS) $(LINK_TARGET)
 # The rule for "all" is used to incrementally build your system.
 # It does this by expressing a dependency on the results of that system,
 # which in turn have their own rules and dependencies.
-all : $(LINK_TARGET)
+all : $(LINK_TARGET1) $(LINK_TARGET2)
 
 # Make Macros do not need to be defined before their Macro Expansions,
 # but they normally should be defined before they appear in any Rules.
@@ -50,10 +56,15 @@ clean:
 # its dependencies' rules have been executed successfully.
 
 # Here is a Rule that uses some built-in Make Macros in its command:
-# $@ expands to the rule's target
-# $^ expands to the rule's dependencies
-$(LINK_TARGET) : $(OBJS)
+# $@ expands to the rule's target, in this case "wgetX".
+# $^ expands to the rule's dependencies, in this case the two files
+# url.o and wgetX.o
+$(LINK_TARGET1) : $(OBJS1)
+	cc -g3 -pthread -o  $@ $^  
+
+$(LINK_TARGET2) : $(OBJS2)
 	cc -g3 -pthread -o  $@ $^ 
+
 
 # Here is a Pattern Rule, often used for compile-line.
 # It says how to create a file with a .o suffix, given a file with a .c suffix.
@@ -62,7 +73,7 @@ $(LINK_TARGET) : $(OBJS)
 # $lt; for the pattern-matched dependency
 
 %.o : %.c
-	cc -g3  -Wall -o $@ -c $<
+	cc -g  -Wall -o $@ -c $<
   
 # These are Dependency Rules, which are rules without any command.
 # Dependency Rules indicate that if any file to the right of the colon changes,
@@ -70,5 +81,7 @@ $(LINK_TARGET) : $(OBJS)
 # The commands for making an out-of-date target up-to-date may be found elsewhere
 # (in this case, by the Pattern Rule above).
 # Dependency Rules are often used to capture header file dependencies.
+client.o : client.h 
+server.o : server.h
 
  

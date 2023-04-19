@@ -8,6 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <pthread.h>
+
+#include "server.h"
 
 int main(int argc, char *argv[]){
 
@@ -20,14 +23,29 @@ int main(int argc, char *argv[]){
         return 2;
     }
     
-    int port;
     sscanf(*(argv+1), "%d", &port);
 
-    int sockfd;
-	char recv_message[1000];
-	const char *hello = "Hello from server. Thanks for your message!";
-	struct sockaddr_in server_addr, client_addr;
+	char recv_message[MESSAGE_LENGTH];
 	
+	create_socket();
+
+	// pthread_t thread_a[NCLIENTS];
+	
+	// for(int i = 0; i <NCLIENTS; i++){
+	// 	if(pthread_create(&thread_a[i], NULL, receive_message, recv_message)) {
+    //     	fprintf(stderr, "Error creating thread\n");
+    //     	return 1;
+    // 	}
+	// }
+
+	// for (int i = 0; i < NCLIENTS; i++)
+    //     pthread_join(thread_a[i], NULL);
+
+	handle_requests(recv_message);
+
+}
+
+void create_socket(){
 	// Creating socket file descriptor
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
 		perror("socket creation failed");
@@ -49,19 +67,26 @@ int main(int argc, char *argv[]){
 		perror("bind failed");
 		exit(EXIT_FAILURE);
 	}
-	
+}
+
+void *handle_requests(void *buffer){
+
 	socklen_t len;
+	//Receive message
+	char *recv_buffer = buffer;
+	len = sizeof(client_addr); 
 
-	len = sizeof(client_addr); //len is value/result
-
-	int n = recvfrom(sockfd, (char *)recv_message, 1000,
+	int n = recvfrom(sockfd, (char *)recv_buffer, MESSAGE_LENGTH,
 				MSG_WAITALL, ( struct sockaddr *) &client_addr,
 				&len);
-	recv_message[n] = '\0';
-	printf("Client : %s\n", recv_message);
-    sendto(sockfd, (const char *)recv_message, strlen(recv_message),
+	recv_buffer[n] = '\0';
+	printf("\n(Thread# %ld) Received this message from the client :\n%s\n", (long)pthread_self(), recv_buffer);
+
+	//Send reply
+	sendto(sockfd, (const char *)recv_buffer, MESSAGE_LENGTH,
 		MSG_CONFIRM, (const struct sockaddr *) &client_addr,
 			len);
 	
-	printf("\n Sent the received message back to client.\n");
+	printf("(Thread# %ld) Sent the received message back to client.\n", (long)pthread_self());
+
 }
