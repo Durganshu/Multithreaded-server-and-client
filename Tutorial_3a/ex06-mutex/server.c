@@ -29,8 +29,61 @@ int main(int argc, char *argv[]){
 	
 	create_socket();
 
-	// pthread_t thread_a[NCLIENTS];
-	
+	 if (listen(sockfd, N) == 0)
+        printf("Listening\n");
+    else
+        printf("Error\n");
+
+	pthread_t thread_a[NCLIENTS];
+	int newSocket;
+    struct sockaddr_storage serverStorage;
+	socklen_t addr_size;
+
+	int i = 0;
+ 
+    while (1) {
+        addr_size = sizeof(serverStorage);
+ 
+        // Extract the first
+        // connection in the queue
+        newSocket = accept(sockfd,
+                           (struct sockaddr*)&serverStorage,
+                           &addr_size);
+        int choice = 0;
+        recv(newSocket,
+             &choice, sizeof(choice), 0);
+ 
+		// Create thread
+		if(pthread_create(&thread_a[i], NULL, handle_requests, recv_message)) {
+        	fprintf(stderr, "Error creating thread\n");
+        	return 1;
+    	}
+        // if (pthread_create(&readerthreads[i++], NULL,
+        //                        reader, &newSocket)
+        //     != 0)
+ 
+        //     // Error in creating thread
+        //     printf("Failed to create thread\n");
+            
+        
+ 
+        if (i >= N) {
+            // Update i
+            i = 0;
+ 
+            while (i < N) {
+                // Suspend execution of
+                // the calling thread
+                // until the target
+                // thread terminates
+                pthread_join(thread_a[i],
+                             NULL);
+            }
+ 
+            // Update i
+            i = 0;
+        }
+    }
 	// for(int i = 0; i <NCLIENTS; i++){
 	// 	if(pthread_create(&thread_a[i], NULL, receive_message, recv_message)) {
     //     	fprintf(stderr, "Error creating thread\n");
@@ -41,7 +94,7 @@ int main(int argc, char *argv[]){
 	// for (int i = 0; i < NCLIENTS; i++)
     //     pthread_join(thread_a[i], NULL);
 
-	handle_requests(recv_message);
+	//handle_requests(recv_message);
 
 }
 

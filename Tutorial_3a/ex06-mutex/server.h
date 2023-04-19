@@ -1,7 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 #define MESSAGE_LENGTH 1000
-#define NCLIENTS 10
+#define NCLIENTS 2
+#define N 2
 
 int port, sockfd;
 
