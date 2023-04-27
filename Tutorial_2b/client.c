@@ -48,22 +48,16 @@ int main(int argc, char *argv[]){
     // char buffer  [INET_ADDRSTRLEN] = "192.168.1.1";
     struct sockaddr_in *addr_in;
 
-    if ( inet_pton(AF_INET, ip_address, &addr_in) ==0){
-           printf ("Conversion error");
-             return 1;}
     ipv4_address.sin_family = AF_INET;
     ipv4_address.sin_port = htons(port);
     ipv4_address.sin_addr.s_addr = inet_addr((char * )ip_address);
-    //ipv4_address.sin_addr.s_addr = addr_in->sin_addr.s_addr;
-    //ipv4_address.sin_addr.s_addr = INADDR_ANY;
+
 
     int sent_bytes = sendto(sockfd, (const char *)sent_message, 
         strlen(sent_message)+1, MSG_CONFIRM, 
         (struct sockaddr*)&ipv4_address, sizeof(ipv4_address));
 
     printf("%d bytes sent to server\n", sent_bytes);
-
-    return 0;
 
     return 0;
 }

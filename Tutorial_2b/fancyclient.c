@@ -48,8 +48,8 @@ int main(int argc, char *argv[]){
     
     ipv4_address.sin_family = AF_INET;
     ipv4_address.sin_port = htons(port);
-    //ipv4_address.sin_addr.s_addr = inet_addr(ip_address);
-    ipv4_address.sin_addr.s_addr = INADDR_ANY;
+    ipv4_address.sin_addr.s_addr = inet_addr(ip_address);
+    //ipv4_address.sin_addr.s_addr = INADDR_ANY;
 
     int sent_bytes = sendto(sockfd, (const char *)sent_message, 
         strlen(sent_message)+1, MSG_CONFIRM, 
