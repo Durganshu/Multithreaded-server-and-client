@@ -78,6 +78,8 @@ void *send_message(void *buffer){
         (struct sockaddr*)&ipv4_address, sizeof(ipv4_address));
 
     printf("(Thread# %ld) %d bytes sent to server.\n", (long)pthread_self(), sent_bytes);
+
+    return NULL;
 }
 
 void *receive_message(void *buffer){
@@ -89,4 +91,6 @@ void *receive_message(void *buffer){
                 &length);
     recv_buffer[n] = '\0';
     printf("\n(Thread# %ld) Received this reply from the server :\n%s\n", (long)pthread_self(), recv_buffer);
+
+    return NULL;
 }

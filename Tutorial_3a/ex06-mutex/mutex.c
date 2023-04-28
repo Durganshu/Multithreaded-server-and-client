@@ -43,4 +43,6 @@ void *increase_counter(void *arg)
 	counter = i+1;
 	pthread_mutex_unlock(&lock);
 
+	return NULL;
+
 }

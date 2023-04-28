@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
     sem_init(&active_clients, 0, MAX_CLIENTS);
     pthread_t threads[MAX_CLIENTS];
     for(int i=0;i<MAX_CLIENTS;i++){
-        pthread_create(&threads[i], NULL, handle_requests, (void *)i);
+        pthread_create(&threads[i], NULL, handle_requests, (void *)(long)i);
     }
     for(int i=0;i<MAX_CLIENTS;i++){
         pthread_join(threads[i], NULL);
@@ -64,27 +64,37 @@ void create_socket(){
 }
 
 void *handle_requests(void *arg){
-    int tid = (int)arg;
+    int tid = (long)arg;
     socklen_t len;
     //Receive message
     char recv_buffer[MESSAGE_LENGTH];
     len = sizeof(client_addr);
     while (1)
-    {
+    {   
         sem_wait(&active_clients);
         pthread_mutex_lock(&active_mutex);
         active_count++;
+        if (active_count > MAX_CLIENTS){
+            printf("\n(Thread# %d) Maximum number of concurrent clients reached. \
+                Will proceed when the threads are avialble... :\n", tid);
+        }
+        
         pthread_mutex_unlock(&active_mutex);
+        
         int n = recvfrom(sockfd, (char *)recv_buffer, 1000,
                 MSG_WAITALL, ( struct sockaddr *) &client_addr,
                 &len);
         recv_buffer[n] = '\0';
-        printf("\n(Thread# %d) Received this message from the client :\n%s\n", tid, recv_buffer);
+        printf("\n(Thread# %d) Received this message from the client :\n%s\n", 
+        tid, recv_buffer);
+        
         sendto(sockfd, (const char *)recv_buffer, strlen(recv_buffer),
             MSG_CONFIRM, (const struct sockaddr *) &client_addr,
             len);
-        printf("(Thread# %d) Sent the received message back to client.\n", tid);
+        
+        printf("\n(Thread# %d) Sent the received message back to client.\n", tid);
         fflush(stdout);
+
         pthread_mutex_lock(&active_mutex);
         active_count--;
         pthread_mutex_unlock(&active_mutex);
