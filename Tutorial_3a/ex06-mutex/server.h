@@ -6,7 +6,7 @@
 
 int port, sockfd;
 
-int active_clients = 0;
+//int active_clients = 0;
 
 struct sockaddr_in server_addr, client_addr;
 

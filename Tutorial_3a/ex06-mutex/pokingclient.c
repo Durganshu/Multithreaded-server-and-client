@@ -22,13 +22,8 @@ int main(int argc, char *argv[]){
         return 2;
     }
     
-
-    char sent_message[MESSAGE_LENGTH];
-    // char sent_message[MESSAGE_LENGTH] = "Hello! I'm one of the clients who's trying to ping you!";
+    char sent_message[MESSAGE_LENGTH] = "Hello! I'm one of the clients who's trying to ping you!";
     char recv_buffer[MESSAGE_LENGTH]; 
-    printf("(Taking user input through the primary thread)\n");
-    printf("Input your message (end the message with ;):\n");
-    scanf("%[^;]s", sent_message);
     ip_address = *(argv+1);
     sscanf(*(argv+2), "%d", &port);
 

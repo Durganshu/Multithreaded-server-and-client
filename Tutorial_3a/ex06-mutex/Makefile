@@ -12,6 +12,10 @@ LINK_TARGET1 = client
 
 LINK_TARGET2 = server
 
+LINK_TARGET3 = pokingclient
+
+LINK_TARGET4 = mutex
+
 
 # Here is a Make Macro that uses the backslash to extend to multiple lines.
 # This allows quick modification of more object files.
@@ -21,12 +25,18 @@ OBJS1 = \
 
 OBJS2 = \
 	server.o 
+
+OBJS3 = \
+	pokingclient.o
+
+OBJS4 = \
+	mutex.o
 	
 # Here is a Make Macro defined by two Macro Expansions.
 # A Macro Expansion may be treated as a textual replacement of the Make Macro.
 # Macro Expansions are introduced with $ and enclosed in (parentheses).
 
-REBUILDABLES = $(OBJS1) $(LINK_TARGET1) $(OBJS2) $(LINK_TARGET2)
+REBUILDABLES = $(OBJS1) $(LINK_TARGET1) $(OBJS2) $(LINK_TARGET2) $(OBJS3) $(LINK_TARGET3) $(OBJS4) $(LINK_TARGET4)
 
 # There are two standard Targets your Makefile should probably have:
 # "all" and "clean", because they are often command-line Goals.
@@ -36,7 +46,7 @@ REBUILDABLES = $(OBJS1) $(LINK_TARGET1) $(OBJS2) $(LINK_TARGET2)
 # The rule for "all" is used to incrementally build your system.
 # It does this by expressing a dependency on the results of that system,
 # which in turn have their own rules and dependencies.
-all : $(LINK_TARGET1) $(LINK_TARGET2)
+all : $(LINK_TARGET1) $(LINK_TARGET2) $(LINK_TARGET3) $(LINK_TARGET4)
 
 # Make Macros do not need to be defined before their Macro Expansions,
 # but they normally should be defined before they appear in any Rules.
@@ -65,6 +75,12 @@ $(LINK_TARGET1) : $(OBJS1)
 $(LINK_TARGET2) : $(OBJS2)
 	cc -g3 -pthread -o  $@ $^ 
 
+$(LINK_TARGET3) : $(OBJS3)
+	cc -g3 -pthread -o  $@ $^ 
+
+$(LINK_TARGET4) : $(OBJS4)
+	cc -g3 -pthread -o  $@ $^ 
+
 
 # Here is a Pattern Rule, often used for compile-line.
 # It says how to create a file with a .o suffix, given a file with a .c suffix.
@@ -83,5 +99,6 @@ $(LINK_TARGET2) : $(OBJS2)
 # Dependency Rules are often used to capture header file dependencies.
 client.o : client.h 
 server.o : server.h
+pokingclient.o : client.h
 
  
