@@ -81,11 +81,14 @@ void *receive_message(void *buffer){
 
     char *recv_buffer = buffer;
     socklen_t length;
-    int n = recvfrom(sockfd, (char *)recv_buffer, MESSAGE_LENGTH, 
+    while (1){
+        int n = recvfrom(sockfd, (char *)recv_buffer, MESSAGE_LENGTH, 
                 MSG_WAITALL, (struct sockaddr *) &ipv4_address,
                 &length);
-    recv_buffer[n] = '\0';
-    printf("\n(Thread# %ld) Received this reply from the server :\n%s\n", (long)pthread_self(), recv_buffer);
+        recv_buffer[n] = '\0';
+        printf("\n(Thread# %ld) Received this reply from the server :\n%s\n", (long)pthread_self(), recv_buffer);
+    }
+    
 
     return NULL;
 }

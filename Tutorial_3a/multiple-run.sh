@@ -6,6 +6,6 @@ trap "pkill -P $$; kill -INT $$" INT
 
 while read n
 do
-    "$@" 
-done < <(seq 40)
+    "$@" &
+done < <(seq 10)
 wait

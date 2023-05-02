@@ -74,25 +74,29 @@ void *handle_requests(void *arg){
         sem_wait(&active_clients);
         pthread_mutex_lock(&active_mutex);
         active_count++;
+        pthread_mutex_unlock(&active_mutex);
         if (active_count > MAX_CLIENTS){
             printf("\n(Thread# %d) Maximum number of concurrent clients reached. \
                 Will proceed when the threads are avialble... :\n", tid);
         }
         
-        pthread_mutex_unlock(&active_mutex);
-        
+    
         int n = recvfrom(sockfd, (char *)recv_buffer, 1000,
                 MSG_WAITALL, ( struct sockaddr *) &client_addr,
                 &len);
         recv_buffer[n] = '\0';
+        
         printf("\n(Thread# %d) Received this message from the client :\n%s\n", 
         tid, recv_buffer);
         
+        //usleep(5000000);
+
         sendto(sockfd, (const char *)recv_buffer, strlen(recv_buffer),
             MSG_CONFIRM, (const struct sockaddr *) &client_addr,
             len);
         
         printf("\n(Thread# %d) Sent the received message back to client.\n", tid);
+        
         fflush(stdout);
 
         pthread_mutex_lock(&active_mutex);
